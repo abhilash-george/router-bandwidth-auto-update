@@ -14,5 +14,5 @@ log_message "Updating wrtbwmon db"
 /usr/sbin/wrtbwmon update /tmp/clickhouse.db
 
 log_message "Starting pusing to Clickhouse database"
-cd /home/wifidabba/clickhouse/scripts && ./clickhouse_push.sh 2>&1 | logger -t clickhouse_push.sh
+cd /home/wifidabba/wrtbwmon/scripts && ./clickhouse_push.sh 2>&1 | logger -t clickhouse_push.sh
 

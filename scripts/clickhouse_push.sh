@@ -2,7 +2,7 @@
 
 LOG_FILE="/tmp/clickhouse.db"
 LOG_DIR="/tmp/clickhouse"
-ENV_FILE="/home/wifidabba/partner-kit/.env"
+ENV_FILE="/home/wifidabba/clickhouse/.env"
 CURRENT_DATE=$(date +"%Y-%m-%d_%H-%M-%S")
 
 if [ -f "$ENV_FILE" ]; then

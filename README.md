@@ -1,3 +1,3 @@
 ## WRTBWMON UPDATE SCRIPT 
 
-step 1
+This is similar to OTA updates but using cron on ubuntu

@@ -5,7 +5,7 @@ log_message() {
 }
 
 log_message "Looking for changes in code"
-cd /home/wifidabba/clickhouse && git checkout Jadhav-Properties && git pull
+cd /home/wifidabba/wrtbwmon && git checkout Jadhav-Properties && git pull
 
 log_message "setting up wrtbwmon db"
 /usr/sbin/wrtbwmon setup /tmp/clickhouse.db

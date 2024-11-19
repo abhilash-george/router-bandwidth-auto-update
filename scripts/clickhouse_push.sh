@@ -80,11 +80,13 @@ EOF
 
         if [ "$response" -eq 200 ]; then
             logger -t Clickhouse_Push "Successfully sent $line_count lines from file $log_file"
-            rm -f "$log_file"
             rm -f "$LOG_DIR/$FILENAME"
-        else
+        else   
             echo "Failed to send data for file $log_file with HTTP status $response"
         fi
+        
+        rm -f "$log_file"
+
     else
         echo "No valid data found in $log_file"
     fi

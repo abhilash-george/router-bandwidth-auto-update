@@ -77,7 +77,8 @@ validate_env() {
 
 get_access_point_clients() {
     access_point_ip_address="$1"
-    /usr/bin/sshpass -p "$access_point_password" ssh -oHostKeyAlgorithms=+ssh-rsa root@"$access_point_ip_address" '
+    timeout=5
+    timeout "$timeout" /usr/bin/sshpass -p "$access_point_password" ssh -oHostKeyAlgorithms=+ssh-rsa root@"$access_point_ip_address" '
         for radio in $(iw dev | grep Interface | awk "{print \$2}"); do
             iw dev "$radio" station dump | grep "Station" | cut -d " " -f 2
         done

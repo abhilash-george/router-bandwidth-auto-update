@@ -16,8 +16,8 @@ send_telegram_alert() {
     local dabba_number="$1"
     local level="$2"
     local title="$3"
-    local bot_token="7170671202:AAHxnM6Nbmjy5MCeiUnI45iefMEqp-uivT4"
-    local chat_id="-1002381858257"
+    local bot_token="$bot_token"
+    local chat_id="$chat_id"
 
     local message="*‼️  \`$title\`*
 
@@ -57,6 +57,8 @@ load_env() {
     base_dabba_id="$DABBA_ID"
     base_dabba_wd_number="$WD_NUMBER"
     lco="${LCO:-wifidabba}"
+    bot_token="$BOT_TOKEN"
+    chat_id="$CHAT_ID"
 }
 
 validate_env() {
@@ -125,6 +127,7 @@ EOF
         if [ "$response" -eq 200 ]; then
             logger "[INFO]: $CURRENT_DATE = Successfully sent $line_count lines from file $log_file"
             rm -f "$LOG_DIR/$FILENAME"
+            rm -f "$log_file"
         else
             log_message "ERROR"  "Failed to send data for file $log_file with HTTP status $response"
             rm -f "$log_file"

@@ -5,20 +5,67 @@ LOG_DIR="/tmp/clickhouse"
 ENV_FILE="/home/wifidabba/wrtbwmon/.env"
 CURRENT_DATE=$(date +"%Y-%m-%d_%H-%M-%S")
 
-if [ -f "$ENV_FILE" ]; then
+log_message() {
+    local level=$1
+    local message=$2
+    logger "[$level]: $CURRENT_DATE = $message"
+    send_telegram_alert "$base_dabba_wd_number" "$level" "$message"
+}
+
+send_telegram_alert() {
+    local dabba_number="$1"
+    local level="$2"
+    local title="$3"
+    local bot_token="7170671202:AAHxnM6Nbmjy5MCeiUnI45iefMEqp-uivT4"
+    local chat_id="-1002381858257"
+
+    local message="*‼️  \`$title\`*
+
+ *Base Dabba Number*: \`$dabba_number\`
+ *Level*: \`$level\`
+ *Time*: \`$(date '+%Y-%m-%d %H:%M:%S')\`"
+
+    curl -s -X POST "https://api.telegram.org/bot${bot_token}/sendMessage" \
+        -d "chat_id=${chat_id}" \
+        -d "text=${message}" \
+        -d "parse_mode=Markdown"
+}
+
+check_required_files() {
+    for file in "$ENV_FILE" "$LOG_FILE"; do
+        if [ ! -f "$file" ]; then
+            log_message "ERROR" "Required file not found: $file"
+            exit 1
+        fi
+    done
+}
+
+
+load_env() {
     set -a 
     . "$ENV_FILE"
     set +a
-else
-    echo "Error: .env file not found in $ENV_FILE!"
-    exit 1
-fi
-BASE_API_URL="$B2B_API_URL"
-API_URL="$BASE_API_URL/api/dabba/metrics/bandwidth-logs"
-AUTH_TOKEN="$WD_TOKEN"
-base_dabba_id="$DABBA_ID"
-base_dabba_wd_number="$WD_NUMBER"
-lco="${LCO:-wifidabba}"
+
+    validate_env "B2B_API_URL"
+    validate_env "WD_TOKEN"
+    validate_env "DABBA_ID"
+    validate_env "WD_NUMBER"
+
+    BASE_API_URL="$B2B_API_URL"
+    API_URL="$BASE_API_URL/api/dabba/metrics/bandwidth-logs"
+    AUTH_TOKEN="$WD_TOKEN"
+    base_dabba_id="$DABBA_ID"
+    base_dabba_wd_number="$WD_NUMBER"
+    lco="${LCO:-wifidabba}"
+}
+
+validate_env() {
+    eval val=\$$1
+    if [ -z "${val}" ]; then
+        log_message "ERROR" "Required environment variable $1 is not set"
+        exit 1
+    fi
+}
 
 process_log_file() {
     local log_file=$1
@@ -30,11 +77,6 @@ process_log_file() {
             continue
         fi
 
-        if [ "$total" -gt 1000000000 ]; then
-            mkdir -p "/home/wifidabba/wrtbwmon_monitoring_logs"
-            cp "$log_file" "/home/wifidabba/wrtbwmon_monitoring_logs/log_file_greater_than_1GB_$CURRENT_DATE.db"
-        fi
-
         json_payload=$(cat <<EOF
 {
 "ip_address" : "$ip_address",
@@ -43,7 +85,9 @@ process_log_file() {
 "download_in_kb" : "$(echo "$download" | awk '{printf "%.0f", $1 / 1000}')", 
 "upload_in_kb" : "$(echo "$upload" | awk '{printf "%.0f", $1 / 1000}')", 
 "total_in_kb" : "$(echo "$total" | awk '{printf "%.0f", $1 / 1000}')",
-"interface" : "$interface"
+"interface" : "$interface",
+"access_point_id": "$base_dabba_id",
+"access_point_wd_number": "$base_dabba_wd_number"
 }
 EOF
 )
@@ -79,22 +123,23 @@ EOF
             "$API_URL")
 
         if [ "$response" -eq 200 ]; then
-            logger -t Clickhouse_Push "Successfully sent $line_count lines from file $log_file"
-            rm -f "$log_file"
+            logger "[INFO]: $CURRENT_DATE = Successfully sent $line_count lines from file $log_file"
             rm -f "$LOG_DIR/$FILENAME"
         else
-            echo "Failed to send data for file $log_file with HTTP status $response"
+            log_message "ERROR"  "Failed to send data for file $log_file with HTTP status $response"
+            rm -f "$log_file"
         fi
     else
-        echo "No valid data found in $log_file"
+        log_message "INFO" "No valid data found in $log_file"
     fi
 }
 
-# Check if the wrtbwmon log file exists.
-if [ -f "$LOG_FILE" ]; then
+main() {
+    check_required_files
+    load_env
     mkdir -p "$LOG_DIR"
-    process_log_file "$LOG_FILE"
-else
-    logger -t clickhouse_push "wrtbwmon dump file not found."
-fi
+    process_log_file "$LOG_FILE" "$connected_devices"
+}
 
+main
+    

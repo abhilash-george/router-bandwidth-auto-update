@@ -133,7 +133,7 @@ EOF
             rm -f "$log_file"
         fi
     else
-        log_message "INFO" "No valid data found in $log_file"
+        logger "INFO" "No valid data found in $log_file"
     fi
 }
 
